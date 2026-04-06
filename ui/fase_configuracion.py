@@ -52,23 +52,37 @@ def render_configuracion():
 
     if st.session_state.rubrica:
         st.subheader("Rúbrica Actual")
-        df = pd.DataFrame(st.session_state.rubrica)
-        st.dataframe(df, width="stretch")
+        
+        # Mostrar cada item con opción de eliminar
+        for idx, item in enumerate(st.session_state.rubrica):
+            with st.expander(f"{idx+1}. {item['hoja_objetivo']}!{item['celda_objetivo']} — {item['enunciado'][:40]}...", expanded=False):
+                col_data, col_btn = st.columns([4, 1])
+                with col_data:
+                    st.write(f"**Enunciado:** {item['enunciado']}")
+                    st.write(f"**Fórmula:** `{item['formula_esperada']}` | **Valor:** `{item['valor_esperado']}`")
+                    st.write(f"**Puntos:** Fórmula ({item['puntos_formula']}), Valor ({item['puntos_valor']})")
+                with col_btn:
+                    if st.button("Eliminar", key=f"del_{idx}"):
+                        st.session_state.rubrica.pop(idx)
+                        st.rerun()
 
-        if st.button("Limpiar Rúbrica"):
-            st.session_state.rubrica = []
-            st.rerun()
-
-        if st.button("Iniciar Sesión de Revisión", type="primary"):
-            if nombre_prueba.strip():
-                sesion_id = crear_sesion(nombre_prueba.strip())
-                guardar_rubrica(sesion_id, st.session_state.rubrica)
-
-                st.session_state.sesion_id = sesion_id
-                st.session_state.nombre_prueba = nombre_prueba.strip()
-                st.session_state.app_mode = "REVISION"
+        st.divider()
+        col1, col2 = st.columns([1, 1])
+        with col1:
+            if st.button("Reiniciar Rúbrica (Borrar Todo)", type="secondary"):
+                st.session_state.rubrica = []
                 st.rerun()
-            else:
-                st.error("Por favor, ingresa un nombre para la prueba.")
+        with col2:
+            if st.button("Iniciar Sesión de Revisión", type="primary", use_container_width=True):
+                if nombre_prueba.strip():
+                    sesion_id = crear_sesion(nombre_prueba.strip())
+                    guardar_rubrica(sesion_id, st.session_state.rubrica)
+
+                    st.session_state.sesion_id = sesion_id
+                    st.session_state.nombre_prueba = nombre_prueba.strip()
+                    st.session_state.app_mode = "REVISION"
+                    st.rerun()
+                else:
+                    st.error("Por favor, ingresa un nombre para la prueba.")
     else:
         st.info("Agrega preguntas en la barra lateral para comenzar.")
