@@ -77,8 +77,8 @@ def guardar_rubrica(sesion_id: int, items: list[dict]):
         for item in items:
             cursor.execute("""
             INSERT INTO ConfiguracionRubrica
-            (sesion_id, enunciado, hoja_objetivo, celda_objetivo, formula_esperada, valor_esperado, puntos_formula, puntos_valor)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            (sesion_id, enunciado, hoja_objetivo, celda_objetivo, formula_esperada, valor_esperado, puntos_formula, puntos_valor, grupo_id)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (
                 sesion_id,
                 item.get("enunciado"),
@@ -87,7 +87,8 @@ def guardar_rubrica(sesion_id: int, items: list[dict]):
                 item.get("formula_esperada"),
                 item.get("valor_esperado"),
                 item.get("puntos_formula"),
-                item.get("puntos_valor")
+                item.get("puntos_valor"),
+                item.get("grupo_id", 0)
             ))
         conn.commit()
 

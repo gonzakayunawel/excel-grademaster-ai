@@ -103,15 +103,19 @@ def render_revision():
         for g_id, celdas_res in grupos_res.items():
             enunciado = celdas_res[0][1]["item"]["enunciado"]
             titulo_enunciado = enunciado[:50] + "..." if len(enunciado) > 50 else enunciado
-            puntaje_grupo_inicial = sum(float(r[1]["evaluacion"]["puntaje_parcial"]) for r in celdas_res)
-            
+            # Leer el puntaje ajustado desde el widget state si ya fue modificado por el docente
+            puntaje_grupo_actual = sum(
+                float(st.session_state.get(f"puntos_{idx}", r["evaluacion"]["puntaje_parcial"]))
+                for idx, r in celdas_res
+            )
+
             with st.expander(
-                f"Pregunta {g_id} — {titulo_enunciado} (Suma inicial: {puntaje_grupo_inicial} pts)",
+                f"Pregunta {g_id} — {titulo_enunciado} ({puntaje_grupo_actual} pts)",
                 expanded=True
             ):
                 st.write(f"**Enunciado completo:** {enunciado}")
                 
-                for idx, res in celdas_res:
+                for i, (idx, res) in enumerate(celdas_res):
                     item = res["item"]
                     ext  = res["extraido"]
                     ev   = res["evaluacion"]
@@ -155,7 +159,8 @@ def render_revision():
                         key=f"puntos_{idx}"
                     )
                     res['evaluacion']['puntaje_parcial_final'] = nuevo_puntaje
-                    st.divider()
+                    if i < len(celdas_res) - 1:
+                        st.divider()
 
         total_final = sum(
             res['evaluacion'].get('puntaje_parcial_final', res['evaluacion']['puntaje_parcial'])

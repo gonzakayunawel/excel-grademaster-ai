@@ -86,33 +86,31 @@ def render_configuracion():
     if st.session_state.rubrica:
         st.subheader("Rúbrica Actual")
         
-        # Agrupar rúbrica por grupo_id para visualización
+        # Agrupar rúbrica por grupo_id guardando el índice real en la lista plana
         grupos = {}
-        for item in st.session_state.rubrica:
+        for flat_idx, item in enumerate(st.session_state.rubrica):
             g_id = item.get("grupo_id", 0)
             if g_id not in grupos:
                 grupos[g_id] = {
                     "enunciado": item["enunciado"],
                     "celdas": []
                 }
-            grupos[g_id]["celdas"].append(item)
-            
+            grupos[g_id]["celdas"].append((flat_idx, item))
+
         for g_id, datos in grupos.items():
             enunciado_corto = datos['enunciado'][:60] + "..." if len(datos['enunciado']) > 60 else datos['enunciado']
-            total_pts = sum(c['puntos_formula'] + c['puntos_valor'] for c in datos['celdas'])
-            
+            total_pts = sum(c['puntos_formula'] + c['puntos_valor'] for _, c in datos['celdas'])
+
             with st.expander(f"Pregunta {g_id}: {enunciado_corto} ({len(datos['celdas'])} celdas, {total_pts} pts)", expanded=False):
                 st.write(f"**Enunciado completo:** {datos['enunciado']}")
-                
-                for idx, c in enumerate(datos['celdas']):
+
+                for flat_idx, c in datos['celdas']:
                     col1, col2 = st.columns([5, 1])
                     with col1:
                         st.write(f"- **{c['hoja_objetivo']}!{c['celda_objetivo']}** | Fórmula: `{c['formula_esperada']}` | Valor: `{c['valor_esperado']}`")
                     with col2:
-                        # Find the actual index in the flat list to delete it
-                        real_idx = st.session_state.rubrica.index(c)
-                        if st.button("Eliminar", key=f"del_{real_idx}"):
-                            st.session_state.rubrica.pop(real_idx)
+                        if st.button("Eliminar", key=f"del_{flat_idx}"):
+                            st.session_state.rubrica.pop(flat_idx)
                             st.rerun()
 
         st.divider()
@@ -121,10 +119,15 @@ def render_configuracion():
             if st.button("Reiniciar Rúbrica (Borrar Todo)", type="secondary"):
                 st.session_state.rubrica = []
                 st.session_state.siguiente_grupo_id = 1
+                st.session_state.celdas_pregunta_actual = []
                 st.rerun()
         with col2:
             if st.button("Iniciar Sesión de Revisión", type="primary"):
-                if nombre_prueba.strip():
+                if st.session_state.celdas_pregunta_actual:
+                    st.warning("Hay celdas sin guardar en la pregunta actual. Guarda o descarta la pregunta antes de iniciar la sesión.")
+                elif not nombre_prueba.strip():
+                    st.error("Por favor, ingresa un nombre para la prueba.")
+                else:
                     sesion_id = crear_sesion(nombre_prueba.strip())
                     guardar_rubrica(sesion_id, st.session_state.rubrica)
 
@@ -132,7 +135,5 @@ def render_configuracion():
                     st.session_state.nombre_prueba = nombre_prueba.strip()
                     st.session_state.app_mode = "REVISION"
                     st.rerun()
-                else:
-                    st.error("Por favor, ingresa un nombre para la prueba.")
     else:
         st.info("Utiliza el constructor de preguntas en la barra lateral para añadir elementos a la rúbrica.")
