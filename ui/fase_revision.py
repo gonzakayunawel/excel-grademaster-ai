@@ -57,10 +57,19 @@ def render_revision():
                 clave = f"{hoja}!{celda}"
                 extraido = datos_extraidos[clave]
 
+                es_fc = item.get("es_formato_condicional", 0) == 1
+                
                 evaluacion = evaluar_pregunta(
-                    extraido["formula"], extraido["valor"],
-                    item["formula_esperada"], item["valor_esperado"],
-                    item["puntos_formula"], item["puntos_valor"]
+                    formula_estudiante=extraido["formula"], 
+                    valor_estudiante=extraido["valor"],
+                    formula_esperada=item["formula_esperada"], 
+                    valor_esperado=item["valor_esperado"],
+                    puntos_formula=item["puntos_formula"], 
+                    puntos_valor=item["puntos_valor"],
+                    es_formato_condicional=es_fc,
+                    rango_esperado=item.get("rango_esperado"),
+                    color_esperado=item.get("color_esperado_hex"),
+                    reglas_estudiante=extraido.get("reglas_fc")
                 )
 
                 progress.progress(
@@ -68,9 +77,16 @@ def render_revision():
                     text=f"Generando feedback para {hoja}!{celda}..."
                 )
                 feedback = generar_feedback(
-                    item["enunciado"], clave,
-                    item["formula_esperada"], item["valor_esperado"],
-                    extraido["formula"], extraido["valor"]
+                    enunciado=item["enunciado"], 
+                    celda=clave,
+                    formula_modelo=item["formula_esperada"], 
+                    valor_modelo=item["valor_esperado"],
+                    formula_estudiante=extraido["formula"], 
+                    valor_estudiante=extraido["valor"],
+                    es_formato_condicional=es_fc,
+                    rango_esperado=item.get("rango_esperado"),
+                    color_esperado=item.get("color_esperado_hex"),
+                    reglas_estudiante=extraido.get("reglas_fc")
                 )
                 progress.progress((i + 1) / len(rubrica), text=f"{hoja}!{celda} completado.")
 
@@ -120,7 +136,7 @@ def render_revision():
                     ext  = res["extraido"]
                     ev   = res["evaluacion"]
 
-                    st.markdown(f"#### 🔸 Celda: {item['hoja_objetivo']}!{item['celda_objetivo']}")
+                    st.markdown(f"#### 🔸 Celda/Rango: {item['hoja_objetivo']}!{item['celda_objetivo']}")
                     
                     # Mostrar advertencia si hubo error de extracción
                     if ext.get("error"):
@@ -129,12 +145,26 @@ def render_revision():
                     col1, col2 = st.columns(2)
                     with col1:
                         st.write("**Estudiante:**")
-                        st.code(f"Fórmula: {ext['formula']}")
-                        st.write(f"Valor: {ext['valor']}")
+                        if item.get("es_formato_condicional"):
+                            st.write(f"Reglas detectadas: {len(ext.get('reglas_fc', []))}")
+                            for r in ext.get('reglas_fc', []):
+                                st.code(f"Rango: {r.get('rango')}\nFórmula: {r.get('formulas')}\nColor: #{r.get('color_hex')}")
+                        else:
+                            st.code(f"Fórmula: {ext.get('formula')}")
+                            st.write(f"Valor: {ext.get('valor')}")
                     with col2:
                         st.write("**Esperado:**")
-                        st.code(f"Fórmula: {item['formula_esperada']}")
-                        st.write(f"Valor: {item['valor_esperado']}")
+                        if item.get("es_formato_condicional"):
+                            st.write(f"Rango: `{item.get('rango_esperado')}`")
+                            st.code(f"Condición: {item.get('formula_esperada')}")
+                            color_esperado = item.get("color_esperado_hex")
+                            if color_esperado:
+                                st.markdown(f"Color: #{color_esperado} <span style='display:inline-block; width:20px; height:20px; background-color:#{color_esperado.replace('#','')}; border:1px solid #000;'></span>", unsafe_allow_html=True)
+                            else:
+                                st.write("Color: Cualquiera")
+                        else:
+                            st.code(f"Fórmula: {item.get('formula_esperada')}")
+                            st.write(f"Valor: {item.get('valor_esperado')}")
 
                     caso_labels = {
                         "COMPLETO": "✅ Completo",

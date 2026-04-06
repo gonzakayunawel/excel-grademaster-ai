@@ -24,9 +24,21 @@ def render_configuracion():
         
         st.subheader("Añadir celda a la pregunta")
         hoja = st.text_input("Hoja (ej: Hoja1)", value="Hoja1")
-        celda = st.text_input("Celda (ej: B12)", max_chars=10)
-        formula = st.text_input("Fórmula esperada")
-        valor = st.text_input("Valor esperado")
+        
+        es_fc = st.checkbox("¿Es formato condicional?")
+        
+        if es_fc:
+            celda = st.text_input("Rango donde se aplica (ej: A1:A10)", max_chars=20)
+            rango_esperado = celda
+            formula = st.text_input("Condición / Fórmula esperada")
+            color_esperado = st.text_input("Color Hexadecimal esperado (ej: FF0000)")
+            valor = ""
+        else:
+            celda = st.text_input("Celda (ej: B12)", max_chars=10)
+            formula = st.text_input("Fórmula esperada")
+            valor = st.text_input("Valor esperado")
+            rango_esperado = None
+            color_esperado = None
         
         col1, col2 = st.columns(2)
         puntos_f = col1.number_input("Pts. Fórmula", min_value=0.0, step=0.5, value=1.0)
@@ -39,11 +51,11 @@ def render_configuracion():
             if not hoja_limpia:
                 st.error("El nombre de la hoja no puede estar vacío.")
             elif not celda_limpia:
-                st.error("La celda objetivo es obligatoria.")
-            elif not _CELDA_RE.match(celda_limpia):
+                st.error("La celda o rango es obligatorio.")
+            elif not es_fc and not _CELDA_RE.match(celda_limpia):
                 st.error(f"'{celda_limpia}' no es una referencia válida.")
-            elif not formula and not valor:
-                st.error("Indica al menos una fórmula o un valor esperado.")
+            elif not formula and not valor and not color_esperado:
+                st.error("Indica al menos un criterio (fórmula, valor o color).")
             else:
                 st.session_state.celdas_pregunta_actual.append({
                     "hoja_objetivo": hoja_limpia,
@@ -51,14 +63,18 @@ def render_configuracion():
                     "formula_esperada": formula,
                     "valor_esperado": valor,
                     "puntos_formula": puntos_f,
-                    "puntos_valor": puntos_v
+                    "puntos_valor": puntos_v,
+                    "es_formato_condicional": es_fc,
+                    "rango_esperado": rango_esperado.strip().upper() if rango_esperado else None,
+                    "color_esperado_hex": color_esperado.strip() if color_esperado else None
                 })
-                st.success(f"Celda {hoja_limpia}!{celda_limpia} añadida a la pregunta actual.")
+                st.success(f"Elemento añadido a la pregunta actual.")
         
         if st.session_state.celdas_pregunta_actual:
             st.markdown("### Celdas en la pregunta actual:")
             for i, c in enumerate(st.session_state.celdas_pregunta_actual):
-                st.markdown(f"- **{c['hoja_objetivo']}!{c['celda_objetivo']}** (F: {c['puntos_formula']}, V: {c['puntos_valor']})")
+                tipo_lbl = "FC" if c.get("es_formato_condicional") else "Normal"
+                st.markdown(f"- **[{tipo_lbl}] {c['hoja_objetivo']}!{c['celda_objetivo']}** (F: {c['puntos_formula']}, V: {c['puntos_valor']})")
             
             if st.button("Guardar Pregunta en Rúbrica General", type="primary"):
                 if not enunciado.strip():
