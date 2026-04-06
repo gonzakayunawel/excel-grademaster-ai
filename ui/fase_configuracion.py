@@ -53,7 +53,7 @@ def render_configuracion():
     if st.session_state.rubrica:
         st.subheader("Rúbrica Actual")
         df = pd.DataFrame(st.session_state.rubrica)
-        st.dataframe(df, use_container_width=True)
+        st.dataframe(df, width="stretch")
 
         if st.button("Limpiar Rúbrica"):
             st.session_state.rubrica = []

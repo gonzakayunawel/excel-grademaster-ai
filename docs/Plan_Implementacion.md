@@ -15,7 +15,7 @@ El plan está dividido en **5 etapas** progresivas. Cada etapa produce código f
 Agregar a `pyproject.toml`:
 ```
 openpyxl
-google-generativeai
+google-genai
 python-dotenv
 pandas
 ```
@@ -182,13 +182,13 @@ def _formula_es_correcta(formula_estudiante: str | None, formula_esperada: str |
 ### Setup
 
 ```python
-import google.generativeai as genai
+from google import genai
 import os
 from dotenv import load_dotenv
 
 load_dotenv()
-genai.configure(api_key=os.environ["GOOGLE_API_KEY"])
-model = genai.GenerativeModel("gemini-1.5-flash")
+client = genai.Client(api_key=os.environ["GOOGLE_API_KEY"])
+model_name = "gemini-1.5-flash"
 ```
 
 ### Función de feedback
@@ -211,7 +211,10 @@ def generar_feedback(
 
 Analiza si el error del estudiante es leve (ej: error de referencia), grave (no sabe usar la función) o si el resultado es correcto pero el proceso es ineficiente. Genera un feedback motivador y breve de máximo 2 líneas."""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(
+        model=model_name,
+        contents=prompt
+    )
     return response.text.strip()
 ```
 
@@ -306,7 +309,7 @@ Responsabilidades:
 | `ui/fase_revision.py` | `excel_engine`, `scoring`, `ai_engine`, `database` |
 | `ui/fase_reporte.py` | `database`, `pandas` |
 | `scoring.py` | — (pura lógica) |
-| `ai_engine.py` | `google-generativeai`, `python-dotenv` |
+| `ai_engine.py` | `google-genai`, `python-dotenv` |
 | `excel_engine.py` | `openpyxl` |
 | `database.py` | `sqlite3` (stdlib) |
 

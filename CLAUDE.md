@@ -63,4 +63,4 @@ Three tables:
 
 - `main.py` — Streamlit entry point (currently a stub)
 - `docs/Especificaciones_Excel_GradeMaster_AI.md` — Full Spanish-language spec with data model, UI requirements, and Gemini prompt template
-- `pyproject.toml` — Dependencies (`streamlit`, `openpyxl`, and `google-generativeai` to be added)
+- `pyproject.toml` — Dependencies (`streamlit`, `openpyxl`, and `google-genai` to be added)

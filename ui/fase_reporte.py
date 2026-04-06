@@ -23,7 +23,7 @@ def render_reporte():
         df_display["estado"] = "Revisado"
 
         st.subheader("Consolidado de Notas")
-        st.dataframe(df_display, use_container_width=True)
+        st.dataframe(df_display, width="stretch")
 
         col1, col2 = st.columns(2)
 
