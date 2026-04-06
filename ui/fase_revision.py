@@ -92,62 +92,76 @@ def render_revision():
         st.divider()
         st.header(f"Resultados: {nombre_estudiante}")
 
+        # Agrupar resultados por grupo_id
+        grupos_res = {}
         for idx, res in enumerate(st.session_state.resultados_actuales):
-            item = res["item"]
-            ext  = res["extraido"]
-            ev   = res["evaluacion"]
+            g_id = res["item"].get("grupo_id", 0)
+            if g_id not in grupos_res:
+                grupos_res[g_id] = []
+            grupos_res[g_id].append((idx, res))
 
-            titulo_enunciado = item["enunciado"]
-            if len(titulo_enunciado) > 50:
-                titulo_enunciado = titulo_enunciado[:50] + "..."
-
+        for g_id, celdas_res in grupos_res.items():
+            enunciado = celdas_res[0][1]["item"]["enunciado"]
+            titulo_enunciado = enunciado[:50] + "..." if len(enunciado) > 50 else enunciado
+            puntaje_grupo_inicial = sum(float(r[1]["evaluacion"]["puntaje_parcial"]) for r in celdas_res)
+            
             with st.expander(
-                f"{item['hoja_objetivo']}!{item['celda_objetivo']} — {titulo_enunciado}",
+                f"Pregunta {g_id} — {titulo_enunciado} (Suma inicial: {puntaje_grupo_inicial} pts)",
                 expanded=True
             ):
-                # Mostrar advertencia si hubo error de extracción
-                if ext.get("error"):
-                    st.error(f"Error de extracción: {ext['error']}")
+                st.write(f"**Enunciado completo:** {enunciado}")
+                
+                for idx, res in celdas_res:
+                    item = res["item"]
+                    ext  = res["extraido"]
+                    ev   = res["evaluacion"]
 
-                col1, col2 = st.columns(2)
-                with col1:
-                    st.write("**Estudiante:**")
-                    st.code(f"Fórmula: {ext['formula']}")
-                    st.write(f"Valor: {ext['valor']}")
-                with col2:
-                    st.write("**Esperado:**")
-                    st.code(f"Fórmula: {item['formula_esperada']}")
-                    st.write(f"Valor: {item['valor_esperado']}")
+                    st.markdown(f"#### 🔸 Celda: {item['hoja_objetivo']}!{item['celda_objetivo']}")
+                    
+                    # Mostrar advertencia si hubo error de extracción
+                    if ext.get("error"):
+                        st.error(f"Error de extracción: {ext['error']}")
 
-                caso_labels = {
-                    "COMPLETO": "✅ Completo",
-                    "PROCESO_OK": "🔶 Proceso correcto, valor incorrecto",
-                    "RESULTADO_OK": "⚠️ Valor correcto sin fórmula (penalización aplicada)",
-                    "ERROR": "❌ Error"
-                }
-                st.write(f"**Caso:** {caso_labels.get(ev['caso'], ev['caso'])}")
-                st.success(
-                    f"Puntaje sugerido: {ev['puntaje_parcial']} pts "
-                    f"(Fórmula: {ev['puntos_obtenidos_formula']}, Valor: {ev['puntos_obtenidos_valor']})"
-                )
+                    col1, col2 = st.columns(2)
+                    with col1:
+                        st.write("**Estudiante:**")
+                        st.code(f"Fórmula: {ext['formula']}")
+                        st.write(f"Valor: {ext['valor']}")
+                    with col2:
+                        st.write("**Esperado:**")
+                        st.code(f"Fórmula: {item['formula_esperada']}")
+                        st.write(f"Valor: {item['valor_esperado']}")
 
-                st.info(f"**Feedback IA:** {res['feedback']}")
-                nuevo_feedback = st.text_area("Editar feedback", value=res['feedback'], key=f"fb_{idx}")
-                res['feedback'] = nuevo_feedback
+                    caso_labels = {
+                        "COMPLETO": "✅ Completo",
+                        "PROCESO_OK": "🔶 Proceso correcto, valor incorrecto",
+                        "RESULTADO_OK": "⚠️ Valor correcto sin fórmula (penalización aplicada)",
+                        "ERROR": "❌ Error"
+                    }
+                    st.write(f"**Caso:** {caso_labels.get(ev['caso'], ev['caso'])}")
+                    st.success(
+                        f"Puntaje sugerido celda: {ev['puntaje_parcial']} pts "
+                        f"(Fórmula: {ev['puntos_obtenidos_formula']}, Valor: {ev['puntos_obtenidos_valor']})"
+                    )
 
-                nuevo_puntaje = st.number_input(
-                    "Ajustar puntaje",
-                    value=float(ev['puntaje_parcial']),
-                    step=0.25,
-                    key=f"puntos_{idx}"
-                )
-                res['evaluacion']['puntaje_parcial_final'] = nuevo_puntaje
+                    st.info(f"**Feedback IA ({item['hoja_objetivo']}!{item['celda_objetivo']}):** {res['feedback']}")
+                    nuevo_feedback = st.text_area(f"Editar feedback celda {item['celda_objetivo']}", value=res['feedback'], key=f"fb_{idx}")
+                    res['feedback'] = nuevo_feedback
+
+                    nuevo_puntaje = st.number_input(
+                        f"Ajustar puntaje celda {item['celda_objetivo']}",
+                        value=float(ev['puntaje_parcial']),
+                        step=0.25,
+                        key=f"puntos_{idx}"
+                    )
+                    res['evaluacion']['puntaje_parcial_final'] = nuevo_puntaje
+                    st.divider()
 
         total_final = sum(
             res['evaluacion'].get('puntaje_parcial_final', res['evaluacion']['puntaje_parcial'])
             for res in st.session_state.resultados_actuales
         )
-        st.subheader(f"Puntaje Total Final: {total_final}")
+        st.subheader(f"Puntaje Total Final Estudiante: {total_final}")
 
         if st.button("Guardar Resultado Estudiante", type="primary"):
             detalle_persistencia = []
@@ -155,6 +169,7 @@ def render_revision():
                 detalle_persistencia.append({
                     "hoja": res["item"]["hoja_objetivo"],
                     "celda": res["item"]["celda_objetivo"],
+                    "grupo_id": res["item"].get("grupo_id", 0),
                     "caso": res["evaluacion"]["caso"],
                     "formula_estudiante": res["extraido"]["formula"],
                     "valor_estudiante": str(res["extraido"]["valor"]),

@@ -53,6 +53,10 @@ def init_db():
             cursor.execute(
                 "ALTER TABLE ConfiguracionRubrica ADD COLUMN hoja_objetivo TEXT NOT NULL DEFAULT 'Hoja1'"
             )
+        if "grupo_id" not in columnas:
+            cursor.execute(
+                "ALTER TABLE ConfiguracionRubrica ADD COLUMN grupo_id INTEGER NOT NULL DEFAULT 0"
+            )
 
         conn.commit()
 
