@@ -31,6 +31,7 @@ def init_db():
             valor_esperado TEXT,
             puntos_formula REAL NOT NULL,
             puntos_valor REAL NOT NULL,
+            grupo_id INTEGER NOT NULL DEFAULT 0,
             FOREIGN KEY (sesion_id) REFERENCES SesionRevision(id)
         );
         """)

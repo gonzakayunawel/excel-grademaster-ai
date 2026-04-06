@@ -56,23 +56,30 @@ def evaluar_pregunta(
     puntos_v = 0.0
     caso = "ERROR"
 
-    if formula_ok and valor_ok:
-        puntos_f = puntos_formula
-        puntos_v = puntos_valor
-        caso = "COMPLETO"
-    elif formula_ok and not valor_ok:
-        puntos_f = puntos_formula
-        puntos_v = 0.0
-        caso = "PROCESO_OK"
-    elif not formula_ok and valor_ok:
-        # Valor correcto pero sin fórmula (hardcodeado): penalización del 50%
-        puntos_f = 0.0
-        puntos_v = puntos_valor * 0.5
-        caso = "RESULTADO_OK"
+    # Si NO se espera formula (rubrica vacia), solo evaluamos el valor sin penalizar
+    espera_formula = bool(formula_esperada and formula_esperada.strip())
+
+    if espera_formula:
+        if formula_ok and valor_ok:
+            puntos_f = puntos_formula
+            puntos_v = puntos_valor
+            caso = "COMPLETO"
+        elif formula_ok and not valor_ok:
+            puntos_f = puntos_formula
+            puntos_v = 0.0
+            caso = "PROCESO_OK"
+        elif not formula_ok and valor_ok:
+            # Valor correcto pero sin fórmula (hardcodeado): penalización del 50%
+            puntos_f = 0.0
+            puntos_v = puntos_valor * 0.5
+            caso = "RESULTADO_OK"
     else:
-        puntos_f = 0.0
-        puntos_v = 0.0
-        caso = "ERROR"
+        # Solo evaluamos valor si no se definio formula esperada
+        if valor_ok:
+            puntos_v = puntos_valor
+            caso = "COMPLETO"
+        else:
+            caso = "ERROR"
 
     return {
         "puntos_obtenidos_formula": puntos_f,
